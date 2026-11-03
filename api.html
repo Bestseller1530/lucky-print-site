@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Order Intake API | Lucky Deals Corp.</title><meta name="description" content="Partner API documentation for Lucky Deals Corp.: orders, tracking, cancellations and status webhooks."><link rel="stylesheet" href="style.css"></head><body><a class="skip" href="#main">Skip to content</a><header class="shell header"><a class="brand" href="index.html">LUCKY DEALS<span>CORP. / PRINT PRODUCTION</span></a><nav aria-label="Main navigation"><a href="index.html">Home</a><a href="api.html" aria-current="page">API</a><a href="mailto:info@luckydeals-corp.com">Contact <span aria-hidden="true">↗</span></a></nav></header><main id="main" class="shell docs"><div class="docs-intro"><p class="eyebrow">PARTNER DOCUMENTATION / V1</p><h1>Order Intake API</h1><p class="notice">API access is being rolled out to partners; CSV and email order intake are available today.</p><p class="lead">A straightforward order workflow for your print-on-demand network.</p><p><strong>Base URL:</strong> <code>https://api.luckydeals-corp.com/v1</code></p><p><strong>Sandbox credentials on request.</strong> <a href="mailto:info@luckydeals-corp.com">Contact our team</a> for access.</p><p>Authenticate requests with your API key in the <code>X-API-Key</code> header. JSON requests use <code>Content-Type: application/json</code>. All examples below are illustrative.</p></div><section class="endpoint"><h2><span class="method">POST</span> <code>/orders</code></h2><p>Create an order. Image URLs must point to JPG, PNG or TIFF files at a minimum of 150 DPI at print size. Use tier <code>standard</code> or <code>premium</code>, and shipping method <code>standard</code> or <code>express</code>.</p><h3>Example request</h3><p><code>POST /v1/orders</code> · <code>X-API-Key: YOUR_SANDBOX_KEY</code></p><pre tabindex="0"><code>{
+  &quot;external_order_id&quot;: &quot;partner-1001&quot;,
+  &quot;shipping&quot;: {
+    &quot;name&quot;: &quot;Alex Morgan&quot;,
+    &quot;address1&quot;: &quot;100 Example Street&quot;,
+    &quot;address2&quot;: &quot;Unit 2&quot;,
+    &quot;city&quot;: &quot;Toronto&quot;,
+    &quot;province&quot;: &quot;ON&quot;,
+    &quot;postal_code&quot;: &quot;M5V 2T6&quot;,
+    &quot;country&quot;: &quot;CA&quot;,
+    &quot;phone&quot;: &quot;+1 416-555-0100&quot;,
+    &quot;email&quot;: &quot;alex@example.com&quot;
+  },
+  &quot;items&quot;: [
+    {
+      &quot;sku&quot;: &quot;CANVAS-STD-16x20-125&quot;,
+      &quot;quantity&quot;: 1,
+      &quot;image_url&quot;: &quot;https://example.com/artwork.jpg&quot;,
+      &quot;tier&quot;: &quot;standard&quot;
+    }
+  ],
+  &quot;shipping_method&quot;: &quot;standard&quot;
+}</code></pre><h3>Example response</h3><pre tabindex="0"><code>{
+  &quot;order_id&quot;: &quot;ord_1001&quot;,
+  &quot;status&quot;: &quot;received&quot;
+}</code></pre></section><section class="endpoint"><h2><span class="method">GET</span> <code>/orders/{order_id}</code></h2><p>Retrieve an order. Status is one of <code>received</code>, <code>in_production</code>, <code>shipped</code> or <code>cancelled</code>. Tracking is available when shipped.</p><h3>Example request</h3><p><code>GET /v1/orders/ord_1001</code> · <code>X-API-Key: YOUR_SANDBOX_KEY</code></p><p>No request body.</p><h3>Example response</h3><pre tabindex="0"><code>{
+  &quot;order_id&quot;: &quot;ord_1001&quot;,
+  &quot;status&quot;: &quot;shipped&quot;,
+  &quot;tracking&quot;: {
+    &quot;carrier&quot;: &quot;UPS&quot;,
+    &quot;tracking_number&quot;: &quot;EXAMPLE-TRACKING-001&quot;,
+    &quot;url&quot;: &quot;https://www.ups.com/track?tracknum=EXAMPLE-TRACKING-001&quot;
+  }
+}</code></pre></section><section class="endpoint"><h2><span class="method">POST</span> <code>/orders/{order_id}/cancel</code></h2><p>Cancellation is allowed only before <code>in_production</code>. Otherwise the API returns HTTP <code>409 Conflict</code>.</p><h3>Example request</h3><p><code>POST /v1/orders/ord_1001/cancel</code> · <code>X-API-Key: YOUR_SANDBOX_KEY</code></p><pre tabindex="0"><code>{}</code></pre><h3>Example response</h3><pre tabindex="0"><code>{
+  &quot;order_id&quot;: &quot;ord_1001&quot;,
+  &quot;status&quot;: &quot;cancelled&quot;
+}</code></pre><p>Example HTTP 409 response:</p><pre tabindex="0"><code>{
+  &quot;error&quot;: &quot;conflict&quot;,
+  &quot;message&quot;: &quot;Order can no longer be cancelled.&quot;
+}</code></pre></section><section class="endpoint"><h2>Status-change webhook</h2><p>We POST to your partner URL on every status change. Payloads are signed with HMAC-SHA256 in the <code>X-Signature</code> header. Confirm signing-secret provisioning and signature encoding with our team during onboarding.</p><h3>Example request to your endpoint</h3><p><code>POST https://partner.example.com/webhooks/orders</code></p><p><code>Content-Type: application/json</code><br><code>X-Signature: &lt;HMAC-SHA256 signature&gt;</code></p><pre tabindex="0"><code>{
+  &quot;order_id&quot;: &quot;ord_1001&quot;,
+  &quot;external_order_id&quot;: &quot;partner-1001&quot;,
+  &quot;status&quot;: &quot;shipped&quot;,
+  &quot;tracking&quot;: {
+    &quot;carrier&quot;: &quot;UPS&quot;,
+    &quot;tracking_number&quot;: &quot;EXAMPLE-TRACKING-001&quot;,
+    &quot;url&quot;: &quot;https://www.ups.com/track?tracknum=EXAMPLE-TRACKING-001&quot;
+  },
+  &quot;timestamp&quot;: &quot;2026-01-15T15:30:00Z&quot;
+}</code></pre><h3>Example partner acknowledgment</h3><p>Illustrative HTTP 200 JSON response from your endpoint:</p><pre tabindex="0"><code>{
+  &quot;received&quot;: true
+}</code></pre></section><section class="endpoint"><h2>SKU reference</h2><p>Format: <code>PRODUCT-TIER-SIZE-DEPTH</code>. Canvas depth codes use hundredths of an inch: <code>125</code> = 1.25", <code>150</code> = 1.5". Framed SKUs use a finish suffix; paper print SKUs omit depth.</p><ul class="sku-list"><li><code>CANVAS-STD-16x20-125</code></li><li><code>CANVAS-PRM-24x36-150</code></li><li><code>FRAMED-STD-16x20-BLK</code></li><li><code>PRINT-PRM-18x24</code></li></ul><p><code>STD</code> = Standard; <code>PRM</code> = Premium Giclée; <code>BLK</code> = black floater frame.</p></section><section class="endpoint"><h2>Error codes</h2><table><thead><tr><th scope="col">HTTP code</th><th scope="col">Meaning</th></tr></thead><tbody><tr><th scope="row">400</th><td>Bad request — invalid or missing request fields.</td></tr><tr><th scope="row">401</th><td>Unauthorized — missing or invalid API key.</td></tr><tr><th scope="row">404</th><td>Not found — the requested order does not exist.</td></tr><tr><th scope="row">409</th><td>Conflict — the order cannot be cancelled in its current state.</td></tr><tr><th scope="row">429</th><td>Too many requests — rate limit reached; retry later.</td></tr></tbody></table></section><section class="endpoint"><h2>Prefer a batch workflow?</h2><p>CSV batch upload and SFTP are available on request. CSV and email order intake are available today.</p><a class="button" href="mailto:info@luckydeals-corp.com">Discuss your integration <span aria-hidden="true">↗</span></a></section></main><footer class="shell footer"><span>© 2026 Lucky Deals Corp.</span><span>Made in Ontario. Shipped under your brand.</span></footer></body></html>
